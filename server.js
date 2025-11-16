@@ -225,7 +225,9 @@ ${cleanPrompt}
     console.error("API Error:", err);
     return res
       .status(500)
-      .json({ error: "มีปัญหาในฝั่ง server: " + (err.message || "UNKNOWN") });
+      .json({
+        error: "มีปัญหาในฝั่ง server: " + (err.message || "UNKNOWN"),
+      });
   }
 });
 
