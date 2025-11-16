@@ -1,0 +1,16 @@
+{
+  "name": "ai-prompt-veo-helper",
+  "version": "1.0.0",
+  "description": "เว็บช่วยแปลง Prompt สำหรับ Veo 3.1 และงานวิดีโอสั้นแนวตลาดนัด",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "openai": "^4.72.0"
+  }
+}

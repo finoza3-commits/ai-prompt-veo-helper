@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AI แปลง Prompt สำหรับ Veo 3.1</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: #050913;
+        color: #f5f7ff;
+      }
+      .wrap {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 16px 12px 32px;
+      }
+      header {
+        text-align: center;
+        margin-bottom: 16px;
+      }
+      header h1 {
+        margin: 4px 0;
+        font-size: 22px;
+      }
+      header h1 span {
+        color: #3fe1ff;
+      }
+      header p {
+        margin: 4px 0 0;
+        font-size: 12px;
+        color: #9ea8c5;
+      }
+      .card {
+        background: radial-gradient(circle at top left, #192132, #0b101b);
+        border-radius: 18px;
+        border: 1px solid #232b3d;
+        padding: 14px 14px 16px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
+        margin-bottom: 14px;
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 4px;
+        color: #c1c9e6;
+      }
+      select,
+      textarea,
+      input[type="file"],
+      input[type="text"] {
+        width: 100%;
+        font-size: 13px;
+        border-radius: 10px;
+        border: 1px solid #273146;
+        background: #070b14;
+        color: #f5f7ff;
+        padding: 8px 10px;
+      }
+      select:focus,
+      textarea:focus,
+      input[type="text"]:focus {
+        outline: none;
+        border-color: #3fe1ff;
+      }
+      textarea {
+        min-height: 90px;
+        resize: vertical;
+      }
+      #speechCustom {
+        min-height: 40px !important;
+        height: 40px !important;
+        resize: vertical;
+      }
+      .small {
+        font-size: 11px;
+        color: #8891af;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .row > div {
+        flex: 1;
+        min-width: 140px;
+      }
+      .btn {
+        border-radius: 999px;
+        border: none;
+        padding: 9px 14px;
+        font-size: 13px;
+        cursor: pointer;
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+        transition: 0.15s ease;
+        white-space: nowrap;
+        width: 100%;
+      }
+      .btn-primary {
+        background: linear-gradient(90deg, #18b0ff, #41f2ff);
+        color: #050913;
+        font-weight: 600;
+      }
+      .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      .btn-ghost {
+        background: transparent;
+        color: #d6defa;
+        border: 1px solid #2b374b;
+      }
+      .btn-line {
+        background: transparent;
+        color: #3fe1ff;
+        border: 1px solid #3fe1ff;
+      }
+      .btn-line:hover {
+        background: rgba(63, 225, 255, 0.08);
+      }
+      .btn-flow {
+        background: #00c853;
+        color: #031015;
+        font-weight: 600;
+      }
+      .btn-flow:hover {
+        filter: brightness(1.05);
+      }
+      .status {
+        font-size: 11px;
+        margin-top: 6px;
+        min-height: 14px;
+      }
+      .status.error {
+        color: #ff8181;
+      }
+      .status.ok {
+        color: #94ffb2;
+      }
+      .section-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .badge {
+        display: inline-flex;
+        border-radius: 999px;
+        border: 1px solid #2b374b;
+        padding: 3px 9px;
+        font-size: 11px;
+        color: #a5b3d9;
+        margin-left: 4px;
+      }
+      .preview-img {
+        margin-top: 8px;
+        max-height: 180px;
+        border-radius: 10px;
+        border: 1px solid #273146;
+        object-fit: contain;
+        display: none;
+        width: 100%;
+      }
+      .preset-group {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 12px;
+        border: 1px solid #273146;
+        background: rgba(8, 12, 24, 0.9);
+      }
+      .preset-title {
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #d2ddff;
+      }
+      @media (max-width: 600px) {
+        .wrap {
+          padding: 12px 8px 24px;
+        }
+        header h1 {
+          font-size: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>AI แปลง Prompt <span>สำหรับ Veo 3.1</span></h1>
+        <p>
+          ใส่คำสั่งดิบ ๆ แนบรูปสินค้า เลือกนักแสดง / ฉาก / ลำดับเหตุการณ์ / บทพูด
+          แล้วให้ AI ช่วยจัดเป็นฟอร์แมต 1–15 พร้อมคัดลอกไปใช้ใน Flow Veo 3.1
+        </p>
+      </header>
+
+      <!-- การตั้งค่า + Prompt ต้นฉบับ + รูป -->
+      <div class="card">
+        <div class="section-title">
+          1. เลือกโหมด + ตัวช่วยสำเร็จรูป
+          <span class="badge">สำหรับ Veo 3.1</span>
+        </div>
+
+        <!-- เลือกโหมดหลัก -->
+        <div style="margin-bottom: 10px">
+          <label for="mode">โหมดการแปลง Prompt</label>
+          <select id="mode">
+            <option value="veo31_shirt">
+              Veo 3.1 – จัด Prompt 1–15 สำหรับ "เสื้อ" (เสื้อยืด / เสื้อโปโล / ฮู้ด)
+            </option>
+            <option value="veo31_underwear">
+              Veo 3.1 – จัด Prompt 1–15 สำหรับ "กางเกงในผู้ชาย"
+            </option>
+            <option value="veo31_socks">
+              Veo 3.1 – จัด Prompt 1–15 สำหรับ "ถุงเท้า"
+            </option>
+
+            <option value="tiktok">
+              โฆษณา TikTok / ตลาดนัด (ไม่บังคับ 1–15)
+            </option>
+            <option value="expand">ขยายรายละเอียดให้เยอะขึ้น</option>
+            <option value="short">ย่อให้กระชับแต่ครบความ</option>
+            <option value="improve">ปรับให้มืออาชีพ อ่านลื่น</option>
+          </select>
+          <div class="small">
+            แนะนำ: ใช้โหมด Veo 3.1 ตามประเภทสินค้า แล้วใส่รายละเอียดสั้น ๆ เช่น สี, ราคา,
+            โปร, บรรยากาศ ฯลฯ
+          </div>
+        </div>
+
+        <!-- กลุ่ม Preset: นักแสดง / ฉาก / ลำดับ / บทพูด -->
+        <div class="preset-group">
+          <div class="preset-title">ตัวเลือกสำเร็จรูป (ช่วยเติมโครงให้เร็วขึ้น)</div>
+
+          <div class="row">
+            <div>
+              <label for="actorPreset">ตัวนักแสดง (Talent)</label>
+              <select id="actorPreset">
+                <option value="">ไม่ระบุ (ใช้จาก Prompt เอง)</option>
+                <option
+                  value="หญิงสาววัย 25 ปี ผิวขาวอมชมพู ผมสั้นตรง แต่งหน้าอ่อน ๆ สไตล์น่ารักบ้าน ๆ เป็นแม่ค้าตลาดนัด ใส่เสื้อสินค้ากับกางเกงยีนส์ขายาว น้ำเสียงสดใส จริงใจ พูดกับกล้องโดยตรง"
+                >
+                  หญิงสาว 25 ปี ผมสั้นตรง น่ารักบ้าน ๆ แม่ค้าตลาดนัด
+                </option>
+                <option
+                  value="ชายวัยประมาณ 55–60 ปี ผิวแทน มีพุงเล็กน้อย ผมหงอกบาง ใส่เสื้อเชิ้ตลายตาราง+กางเกงขาสั้น ลุคพ่อค้าตลาดนัด พูดเก่ง กวน ๆ แต่จริงใจ น้ำเสียงดังฟังชัด"
+                >
+                  ลุงตลาดนัด 60 ปี ขายเก่ง ขี้เล่น
+                </option>
+                <option
+                  value="หญิงสูงวัยประมาณ 55–65 ปี ผิวสองสี ผมรวบมวยต่ำ ใส่ผ้าถุง+เสื้อยืดลายไทย ๆ บุคลิกใจดี ขี้เล่น แบบยายตลาดนัด"
+                >
+                  ยายตลาดนัด บ้าน ๆ ใจดี
+                </option>
+                <option
+                  value="หญิงสาววัย 22–28 ปี ลุคสาวออฟฟิศหรือนักศึกษา แต่งตัวสุภาพ ใส่เสื้อสินค้า+กางเกงสแลคหรือยีนส์ น้ำเสียงนุ่มนวล แต่มั่นใจ"
+                >
+                  สาวออฟฟิศ / นักศึกษา ดูสุภาพ
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label for="scenePreset">ฉาก / สถานที่</label>
+              <select id="scenePreset">
+                <option value="">ไม่ระบุ (ใช้จาก Prompt เอง)</option>
+                <option
+                  value="ตลาดนัดกลางคืนท้องถิ่น แสงไฟวินเทจโทนอุ่นจากหลอดไฟห้อยเรียงกัน มีแผงขายของสองข้างทาง บรรยากาศคึกคักแต่เป็นกันเอง"
+                >
+                  ตลาดนัดกลางคืน แสงไฟวินเทจ
+                </option>
+                <option
+                  value="ตลาดนัดกลางวันบ้าน ๆ มีร่มหลากสี แสงธรรมชาติ คนเดินจับจ่ายไปมา บรรยากาศสดใส"
+                >
+                  ตลาดนัดกลางวัน บ้าน ๆ
+                </option>
+                <option
+                  value="หน้าร้านเสื้อผ้าบนห้าง แสงสว่างใส สะอาด มีราวแขวนเสื้อเรียงเป็นระเบียบ"
+                >
+                  ร้านเสื้อผ้าบนห้าง
+                </option>
+                <option
+                  value="มุมคาเฟ่โทนมินิมอล แสงไฟอบอุ่น โต๊ะไม้ ฉากหลังสะอาด"
+                >
+                  คาเฟ่โทนอุ่น มินิมอล
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="flowPreset">ลำดับเหตุการณ์ (Sequence)</label>
+              <select id="flowPreset">
+                <option value="">ไม่ระบุ (ใช้จาก Prompt เอง)</option>
+                <option
+                  value="เริ่มจาก mid-shot นักแสดงยืนอยู่หน้าแผงสินค้า มองกล้องและยิ้ม ก่อนเดินเข้าหากล้องเล็กน้อย หยิบสินค้าใกล้มือขึ้นมาโชว์ หมุนเบา ๆ ให้เห็นรายละเอียด จากนั้นพูดรีวิวและปิดการขายในช็อตเดียวแบบ long-take"
+                >
+                  เดินเข้ากล้อง > หยิบสินค้า > โชว์ > พูดปิดขาย (long-take)
+                </option>
+                <option
+                  value="เปิดด้วยช็อตโคลสอัพที่ตัวสินค้าในราว แล้วแพนกล้องมาหานักแสดงที่หยิบสินค้าขึ้นมา จากนั้นตัดเป็น mid-shot นักแสดงพูดรีวิวสั้น ๆ และปิดท้ายด้วยการชูสินค้าพร้อมยิ้ม"
+                >
+                  เปิดที่สินค้า > แพนมาหานักแสดง > พูดรีวิว
+                </option>
+                <option
+                  value="เริ่มด้วยช็อตนักแสดงถือสินค้าอยู่แล้ว เดินเข้าหากล้องเล็กน้อย ยื่นสินค้าเข้ากล้องให้เห็นชัด พร้อมพูดรีวิวแบบสั้น กระชับ จบในช็อตเดียว"
+                >
+                  ถือสินค้าเดินเข้ากล้อง > ยื่นให้ดู > พูดจบในช็อตเดียว
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label for="speechPreset">บทพูดนักแสดง (โทน)</label>
+              <select id="speechPreset">
+                <option value="">ไม่ระบุ (จะใช้จาก Prompt ที่พิมพ์เอง)</option>
+                <option
+                  value='โทนภาษาจริงใจ เน้นคุณภาพสินค้าและความคุ้มค่า ปิดท้ายด้วยคำว่า "กดในตะกร้าเลยค่ะ"'
+                >
+                  โทนจริงใจ เน้นคุณภาพ + กดในตะกร้าเลยค่ะ
+                </option>
+                <option
+                  value='โทนกวน ๆ ขายของแบบเพื่อนแนะนำเพื่อน เล่นมุกเล็กน้อย และปิดท้ายด้วย "ของดีแบบนี้ อย่าคิดนาน กดในตะกร้าเลย!"'
+                >
+                  โทนกวน ๆ ขายแบบเพื่อน
+                </option>
+                <option
+                  value='โทนจริงจังเล็กน้อย เน้นว่าของจำเป็น ราคาไม่แรง ใช้ได้ทุกวัน ปิดท้ายด้วยวลีชวนซื้อสั้น ๆ เช่น "คุ้มกว่านี้ไม่มีแล้ว กดสั่งได้เลยค่ะ"'
+                >
+                  โทนจริงจัง + เน้นคุ้มค่า
+                </option>
+                <option
+                  value='เน้นเร่งด่วน บอกว่าเดี๋ยวของหมด/โปรหมดเร็ว ปิดท้ายด้วยคำว่า "รีบกดเลย เดี๋ยวไม่ทันโปรนะคะ"'
+                >
+                  โทนเร่งด่วน กลัวไม่ทันโปร
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="small" style="margin-top: 6px">
+            ถ้าไม่อยากใช้ตัวช่วยสำเร็จรูป สามารถปล่อยว่าง แล้วพิมพ์รายละเอียดเองในช่อง
+            Prompt ได้ตามปกติ
+          </div>
+        </div>
+
+        <!-- แนบรูป -->
+        <div style="margin-top: 10px; margin-bottom: 10px">
+          <label for="imageInput">แนบรูปสินค้า (ไม่บังคับ)</label>
+          <input type="file" id="imageInput" accept="image/*" />
+          <div class="small">
+            ถ้ามีรูปสินค้าจริง ให้แนบมาด้วย AI จะช่วยอธิบายให้ตรงกับรูปมากขึ้น
+          </div>
+          <img id="imagePreview" class="preview-img" alt="ตัวอย่างรูป" />
+        </div>
+
+        <!-- ช่องใหม่: บทพูดนักแสดง -->
+        <div style="margin-bottom: 10px">
+          <label for="speechCustom">ประโยคบทพูดหลักของนักแสดง (ถ้ามี)</label>
+          <textarea
+            id="speechCustom"
+            placeholder='เช่น "เสื้อโปโลสีดำลายดอกบัว ผ้านุ่ม ใส่ง่ายทุกวัน กดในตะกร้าเลยค่ะ" หรือ "ของดีแบบนี้อย่าคิดนาน ตัวละ 17 บาท กดในตะกร้าเลย!"'
+          ></textarea>
+          <div class="small">
+            ถ้าใส่ข้อความในช่องนี้ ระบบจะส่งไปบอก AI ว่าเป็นประโยคหลักที่อยากให้ตัวนักแสดงพูด
+            และให้ช่วยปรับให้อยู่ในสไตล์ที่ใกล้เคียง พร้อมจัดเข้าฟอร์แมต Veo 3.1 ให้
+          </div>
+        </div>
+
+        <!-- Prompt ต้นฉบับ -->
+        <div style="margin-bottom: 8px">
+          <label for="inputPrompt">Prompt ต้นฉบับ (พิมพ์แบบที่คุณคิด)</label>
+          <textarea
+            id="inputPrompt"
+            placeholder='ตัวอย่าง: "ทำคลิปขายเสื้อโปโลสีดำลายดอกบัว ตลาดนัดกลางคืน 8 วิ ปิดท้าย กดในตะกร้าเลยค่ะ ห้ามมีตัวหนังสือบนหน้าจอ"'
+          ></textarea>
+        </div>
+
+        <div class="row">
+          <div>
+            <button id="transformBtn" class="btn btn-primary" type="button">
+              ✨ แปลง Prompt ด้วย AI
+            </button>
+          </div>
+          <div>
+            <button id="clearBtn" class="btn btn-ghost" type="button">
+              🧹 ล้างทุกช่อง
+            </button>
+          </div>
+        </div>
+
+        <div id="status" class="status"></div>
+      </div>
+
+      <!-- ผลลัพธ์ -->
+      <div class="card">
+        <div class="section-title">
+          2. ผลลัพธ์ Prompt สำหรับ Veo / ใช้งานต่อ
+          <span class="badge">พร้อมคัดลอกไปวางใน Flow Veo 3.1</span>
+        </div>
+
+        <textarea
+          id="outputPrompt"
+          placeholder="เมื่อกดปุ่มแปลงด้านบน ผลลัพธ์ที่ AI จัดรูปแบบแล้วจะมาแสดงตรงนี้ (เช่น ฟอร์แมต 1–15 สำหรับ Veo 3.1)"
+        ></textarea>
+
+        <div class="row" style="margin-top: 10px">
+          <div>
+            <button id="copyBtn" class="btn btn-line" type="button">
+              📋 คัดลอกผลลัพธ์
+            </button>
+          </div>
+          <div>
+            <button id="openFlowBtn" class="btn btn-flow" type="button">
+              🚀 คัดลอก + เปิด Flow Veo 3.1
+            </button>
+          </div>
+        </div>
+
+        <div class="small" style="margin-top: 8px">
+          วิธีใช้งาน: 1) ใส่ Prompt ดิบ + เลือกตัวช่วยสำเร็จรูป 2) กด "แปลง Prompt" 3)
+          กด "คัดลอก + เปิด Flow Veo 3.1" 4) วาง Prompt ใน Flow แล้วกด Generate
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const modeEl = document.getElementById("mode");
+      const imageInput = document.getElementById("imageInput");
+      const imagePreview = document.getElementById("imagePreview");
+      const inputPrompt = document.getElementById("inputPrompt");
+      const outputPrompt = document.getElementById("outputPrompt");
+      const transformBtn = document.getElementById("transformBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const copyBtn = document.getElementById("copyBtn");
+      const openFlowBtn = document.getElementById("openFlowBtn");
+      const statusEl = document.getElementById("status");
+
+      // dropdown ใหม่
+      const actorPreset = document.getElementById("actorPreset");
+      const scenePreset = document.getElementById("scenePreset");
+      const flowPreset = document.getElementById("flowPreset");
+      const speechPreset = document.getElementById("speechPreset");
+
+      // ช่องใหม่: ประโยคบทพูดหลัก
+      const speechCustom = document.getElementById("speechCustom");
+
+      let imageData = null;
+
+      // อ่านรูปเป็น Data URL และแสดง preview
+      imageInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+          imageData = null;
+          imagePreview.style.display = "none";
+          imagePreview.src = "";
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          imageData = reader.result;
+          imagePreview.src = imageData;
+          imagePreview.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+      });
+
+      function buildFinalPrompt() {
+        const basePrompt = inputPrompt.value.trim();
+        const parts = [];
+
+        if (basePrompt) {
+          parts.push("รายละเอียดจากผู้ใช้:\n" + basePrompt);
+        }
+
+        // ดึงค่าจาก preset dropdown
+        const actor = actorPreset.value;
+        const scene = scenePreset.value;
+        const flow = flowPreset.value;
+        const speech = speechPreset.value;
+
+        const presetLines = [];
+
+        if (actor) {
+          presetLines.push("ตัวนักแสดง (จากตัวเลือก): " + actor);
+        }
+        if (scene) {
+          presetLines.push("ฉาก / สถานที่ (จากตัวเลือก): " + scene);
+        }
+        if (flow) {
+          presetLines.push("ลำดับเหตุการณ์ (จากตัวเลือก): " + flow);
+        }
+        if (speech) {
+          presetLines.push("โทนบทพูดนักแสดง (จากตัวเลือก): " + speech);
+        }
+
+        if (presetLines.length > 0) {
+          parts.push(
+            "ตัวช่วยสำเร็จรูปเพิ่มเติม (ช่วยใช้เป็นแนวทางจัดโครง 1–15 ให้ด้วย):\n" +
+              presetLines.join("\n")
+          );
+        }
+
+        // ประโยคบทพูดหลักจากผู้ใช้
+        const speechCustomText = speechCustom.value.trim();
+        if (speechCustomText) {
+          parts.push(
+            "ประโยคบทพูดหลักของนักแสดง (ผู้ใช้ต้องการให้พูดหรือใช้เป็นแกนหลักของบทพูด):\n" +
+              speechCustomText
+          );
+        }
+
+        return parts.join("\n\n").trim();
+      }
+
+      async function transformPrompt() {
+        statusEl.textContent = "";
+        statusEl.className = "status";
+
+        const mode = modeEl.value;
+        const finalPrompt = buildFinalPrompt();
+
+        if (!finalPrompt) {
+          statusEl.textContent =
+            "⚠ กรุณาใส่ Prompt ต้นฉบับ หรือเลือกตัวช่วยสำเร็จรูปอย่างน้อย 1 รายการ";
+          statusEl.classList.add("error");
+          return;
+        }
+
+        transformBtn.disabled = true;
+        statusEl.textContent = "⏳ กำลังให้ AI ช่วยแปลง Prompt...";
+
+        try {
+          const res = await fetch("/api/transform", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: finalPrompt, mode, imageData }),
+          });
+
+          if (!res.ok) {
+            throw new Error("Server error: " + res.status);
+          }
+
+          const data = await res.json();
+          if (data.error) {
+            throw new Error(data.error);
+          }
+
+          outputPrompt.value = data.result || "";
+          statusEl.textContent = "✅ แปลง Prompt เสร็จแล้ว";
+          statusEl.classList.add("ok");
+        } catch (err) {
+          console.error(err);
+          statusEl.textContent =
+            "❌ มีปัญหาในการเรียก AI: " + (err.message || "UNKNOWN");
+          statusEl.classList.add("error");
+        } finally {
+          transformBtn.disabled = false;
+        }
+      }
+
+      transformBtn.addEventListener("click", transformPrompt);
+
+      clearBtn.addEventListener("click", () => {
+        inputPrompt.value = "";
+        outputPrompt.value = "";
+        statusEl.textContent = "";
+        statusEl.className = "status";
+        imageInput.value = "";
+        imagePreview.style.display = "none";
+        imagePreview.src = "";
+        imageData = null;
+
+        actorPreset.value = "";
+        scenePreset.value = "";
+        flowPreset.value = "";
+        speechPreset.value = "";
+        speechCustom.value = "";
+      });
+
+      copyBtn.addEventListener("click", async () => {
+        const text = outputPrompt.value.trim();
+        if (!text) return;
+        try {
+          await navigator.clipboard.writeText(text);
+          statusEl.textContent = "📋 คัดลอกผลลัพธ์แล้ว";
+          statusEl.className = "status ok";
+        } catch {
+          statusEl.textContent = "ไม่สามารถคัดลอกอัตโนมัติได้";
+          statusEl.className = "status error";
+        }
+      });
+
+      // ปุ่มคัดลอก + เปิด Flow Veo 3.1
+      openFlowBtn.addEventListener("click", async () => {
+        const text = outputPrompt.value.trim();
+        if (!text) {
+          statusEl.textContent =
+            "⚠ ยังไม่มีผลลัพธ์ให้คัดลอก (กดแปลง Prompt ก่อน)";
+          statusEl.className = "status error";
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(text);
+          statusEl.textContent =
+            "📋 คัดลอกผลลัพธ์แล้ว กำลังเปิด Flow Veo 3.1...";
+          statusEl.className = "status ok";
+        } catch {
+          statusEl.textContent =
+            "คัดลอกอัตโนมัติไม่สำเร็จ แต่จะเปิด Flow Veo 3.1 ให้";
+          statusEl.className = "status error";
+        }
+        window.open("https://labs.google/fx/tools/flow", "_blank");
+      });
+    </script>
+  </body>
+</html>
