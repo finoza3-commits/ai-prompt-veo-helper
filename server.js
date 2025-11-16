@@ -11,7 +11,7 @@ dotenv.config();
 
 const app = express();
 
-// ✅ ฟิกพอร์ตตรง ๆ ไปเลยที่ 3001
+// ใช้ PORT จาก env (Render จะส่งมาให้) ถ้าไม่มีให้ใช้ 3001 เวลาเทสต์ในเครื่อง
 const port = process.env.PORT || 3001;
 
 // ตั้งค่า OpenAI
@@ -144,7 +144,8 @@ app.post("/api/transform", async (req, res) => {
     ) {
       // 3 โหมดหลักที่ต้องการ 1–14
       let productLabel = "สินค้าเสื้อผ้า";
-      if (mode === "veo31_shirt") productLabel = "เสื้อ / เสื้อยืด / เสื้อโปโล / ฮู้ด";
+      if (mode === "veo31_shirt")
+        productLabel = "เสื้อ / เสื้อยืด / เสื้อโปโล / ฮู้ด";
       if (mode === "veo31_underwear") productLabel = "กางเกงในผู้ชาย";
       if (mode === "veo31_socks") productLabel = "ถุงเท้า";
 
