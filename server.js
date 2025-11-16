@@ -12,7 +12,7 @@ dotenv.config();
 const app = express();
 
 // ✅ ฟิกพอร์ตตรง ๆ ไปเลยที่ 3001
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 3010;
 
 // ตั้งค่า OpenAI
 const client = new OpenAI({
