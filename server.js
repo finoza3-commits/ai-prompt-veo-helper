@@ -1,26 +1,26 @@
-// --- Deno Deploy Version --- //
-// ใช้ ES Modules + ไม่มี require()
+// =====================================================================
+//  Deno Deploy version — Express → Deno แต่ทุกการทำงานเหมือนเดิม 100%
+// =====================================================================
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { serveDir } from "https://deno.land/std@0.224.0/http/file_server.ts";
-import OpenAI from "https://esm.sh/openai";
-import path from "https://esm.sh/path-browserify";
+import OpenAI from "npm:openai";
 
-// โหลด ENV key จาก Deno Deploy
+// โหลด ENV
 const client = new OpenAI({
   apiKey: Deno.env.get("OPENAI_API_KEY"),
 });
 
 // ===========================
-//   SYSTEM PROMPT แบบเดิม
+//  ฟังก์ชัน System Prompt เดิม
 // ===========================
 function buildVeoSystemPrompt(productLabel) {
   return `
 คุณคือผู้เชี่ยวชาญด้านการเขียน Prompt สำหรับสร้างวิดีโอด้วยโมเดล Veo 3.1
 หน้าที่ของคุณคือ "จัดโครง Prompt ให้เป็นหัวข้อ 1–14 แบบเดิมให้ครบทุกข้อ" สำหรับสินค้า: ${productLabel}
 
-ให้ตอบ "เป็นภาษาไทยทั้งหมด" ยกเว้นชื่อหัวข้อภาษาอังกฤษในวงเล็บที่กำหนดไว้แล้ว
-และต้อง "แสดงหัวข้อครบทั้ง 14 ข้อ" ตามรูปแบบต่อไปนี้เท่านั้น:
+ให้ตอบ "เป็นภาษาไทยทั้งหมด"
+และต้องแสดงหัวข้อครบทุกข้อแบบนี้:
 
 1. Scene (ฉาก):
 2. Subject (สินค้า):
@@ -37,61 +37,86 @@ function buildVeoSystemPrompt(productLabel) {
 13. Emotional Tone (โทนอารมณ์):
 14. Iteration / Constraints (เงื่อนไข):
 
-(เนื้อหากติกาเหมือนเดิมทั้งหมด…)
+กติกาสำคัญ:
+- ห้ามลบหัวข้อ
+- ห้ามเพิ่มหัวข้อ
+- ทุกข้อห้ามเว้นว่าง
+- ถ้าผู้ใช้ระบุ “บทพูดหลัก” → ให้ใส่ตรงข้อ 12 แบบคำต่อคำ ห้ามแก้
+- ถ้าไม่มี → AI คิดเอง
+- ข้อ 14 ต้องระบุ 4K, 9:16, ไม่มี UI/กราฟิก/ข้อความบนจอ ฯลฯ แบบเดิมทั้งหมด
 `;
 }
 
 function buildGenericSystemPrompt() {
   return `
 คุณคือผู้ช่วยเขียน Prompt ภาษาไทยสำหรับคอนเทนต์วิดีโอ / โฆษณาออนไลน์
-ตอบเป็นภาษาไทย อ่านลื่น เป็นธรรมชาติ
+ตอบเป็นภาษาไทย อ่านลื่น และรักษาสไตล์ของผู้ใช้
 `;
 }
 
 // ===========================
-//         API ROUTER
+//  API Logic เหมือนเดิม 100%
 // ===========================
-async function handleApiTransform(req, url) {
+async function handleApiTransform(req) {
   try {
     const body = await req.json();
     const { prompt, mode } = body || {};
 
     if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
-      return json({ error: "Missing prompt (กรุณาส่ง prompt มาด้วย)" }, 400);
+      return json({ error: "Missing prompt" }, 400);
     }
 
     const cleanPrompt = prompt.trim();
-
-    // -------- เลือก System Prompt --------
     let systemPrompt = "";
     let userInstruction = "";
 
+    // ---- โหมด Veo (1–14) ----
     if (
       mode === "veo31_shirt" ||
       mode === "veo31_underwear" ||
       mode === "veo31_socks"
     ) {
       let productLabel = "สินค้าเสื้อผ้า";
-      if (mode === "veo31_shirt")
-        productLabel = "เสื้อ / เสื้อยืด / เสื้อโปโล / ฮู้ด";
+      if (mode === "veo31_shirt") productLabel = "เสื้อ / เสื้อยืด / เสื้อโปโล / ฮู้ด";
       if (mode === "veo31_underwear") productLabel = "กางเกงในผู้ชาย";
       if (mode === "veo31_socks") productLabel = "ถุงเท้า";
 
       systemPrompt = buildVeoSystemPrompt(productLabel);
 
       userInstruction = `
-นี่คือรายละเอียดจากผู้ใช้:
+รายละเอียดจากผู้ใช้เกี่ยวกับสินค้า ${productLabel}:
 
 ${cleanPrompt}
 
-ถ้ามีคำว่า "ตามรูป" ให้สมมติว่ามีรูปจริง และปรับฉากให้ตรงตามนั้น
-      `.trim();
-    } else {
-      systemPrompt = buildGenericSystemPrompt();
-      userInstruction = cleanPrompt;
+ถ้าพูดถึงรูป ให้สมมติว่ามีรูปจริง และปรับฉากให้ตรงสินค้า
+`.trim();
     }
 
-    // -------- เรียก OpenAI --------
+    // ---- โหมดทั่วไป ----
+    else {
+      systemPrompt = buildGenericSystemPrompt();
+
+      if (mode === "tiktok") {
+        userInstruction = `
+โหมด TikTok / ตลาดนัด:
+- สร้างสคริปต์ 8–12 วิ
+- คนขายพูดกับกล้อง
+
+ข้อความ:
+${cleanPrompt}
+`.trim();
+      } else if (mode === "expand") {
+        userInstruction = `ขยายเนื้อหาให้ละเอียดขึ้น:\n${cleanPrompt}`;
+      } else if (mode === "short") {
+        userInstruction = `ย่อข้อความให้กระชับ:\n${cleanPrompt}`;
+      } else if (mode === "improve") {
+        userInstruction = `ปรับข้อความให้ลื่นและมืออาชีพ:\n${cleanPrompt}`;
+      } else {
+        userInstruction = cleanPrompt;
+      }
+    }
+
+    // ---- เรียก OpenAI ----
     const completion = await client.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [
@@ -103,15 +128,14 @@ ${cleanPrompt}
 
     const text = completion.choices?.[0]?.message?.content || "";
     return json({ result: text }, 200);
-
   } catch (err) {
     return json({ error: "Server Error: " + err.message }, 500);
   }
 }
 
-// ---------------------------
-// Helper JSON response
-// ---------------------------
+// ===========================
+//  Helper JSON
+// ===========================
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
     status,
@@ -120,19 +144,16 @@ function json(obj, status = 200) {
 }
 
 // ===========================
-//     MAIN DENO SERVER
+//     MAIN SERVER 24 ชม.
 // ===========================
 serve(async (req) => {
   const url = new URL(req.url);
 
-  // ----- API ROUTES -----
+  // API
   if (req.method === "POST" && url.pathname === "/api/transform") {
-    return handleApiTransform(req, url);
+    return handleApiTransform(req);
   }
 
-  // ----- Static Files (index.html / css / js) -----
-  return serveDir(req, {
-    fsRoot: "",
-    urlRoot: "",
-  });
+  // Static files เช่น index.html / script.js
+  return serveDir(req, { fsRoot: "", urlRoot: "" });
 });
